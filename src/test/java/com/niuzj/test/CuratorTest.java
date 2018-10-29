@@ -2,8 +2,7 @@ package com.niuzj.test;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.retry.RetryNTimes;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,7 +15,7 @@ import java.util.List;
  */
 public class CuratorTest {
 
-    private String host = "192.168.70.80:2181";
+    private String host = "192.168.70.128:2181";
 
     private CuratorFramework client;
 
@@ -66,6 +65,7 @@ public class CuratorTest {
         /*
          * 监视一个节点下1）孩子结点的创建 2）删除 3）以及结点数据的更新
          * 不包含节点自己的变化
+         * cacheData:是否缓存数据到本地
          */
         PathChildrenCache watcher = new PathChildrenCache(client, "/zyq", true);
         watcher.getListenable().addListener((client, event) -> {
@@ -79,7 +79,56 @@ public class CuratorTest {
         });
         watcher.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
         Thread.sleep(Long.MAX_VALUE);
+    }
 
+    //监听一个节点的更新,删除,新建
+    @Test
+    public void test07() throws Exception {
+        final String path = "/zyq";
+        NodeCache watcher = new NodeCache(client, path);
+        watcher.getListenable().addListener(() -> {
+            ChildData data = watcher.getCurrentData();
+            //为null则不存在
+//            if (data == null){
+//                System.out.println(path + "已不存在");
+//                return;
+//            }
+//            System.out.println("data is " + new String(data.getData()));
+//            System.out.println(data.getPath());
+            //////////////////////////////////第二种判断方式////////////////////////////////////
+            if (client.checkExists().forPath(path) == null){
+                System.out.println(path + "已不存在");
+                return;
+            }
+            System.out.println(new String(client.getData().forPath(path)));
+
+        });
+        watcher.start();
+        Thread.sleep(Long.MAX_VALUE);
+    }
+
+    /*
+        是NodeCache和PathChildrenCache的结合体
+        既能监听该节点的更新, 删除, 创建
+        又能监听该节点的子节点的更新, 删除, 创建
+     */
+
+    @Test
+    public void test08() throws Exception {
+        String path = "/zyq";
+        TreeCache watcher = new TreeCache(client, path);
+        watcher.getListenable().addListener((client, event) -> {
+            ChildData data = event.getData();
+            if (data == null){
+                return;
+            }
+            TreeCacheEvent.Type type = event.getType();
+            System.out.println(type);
+            System.out.println(data.getPath());
+            System.out.println(type.equals(TreeCacheEvent.Type.NODE_REMOVED) ? "" : new String(data.getData()));
+        });
+        watcher.start();
+        Thread.sleep(Long.MAX_VALUE);
     }
 
 }
