@@ -11,19 +11,28 @@ public final class CuratorUtil {
     private static CuratorFramework client;
 
     static{
-        ResourceBundle bundle = ResourceBundle.getBundle("zookeeper");
-        String host = bundle.getString("host");
-        client = CuratorFrameworkFactory.newClient(host, new RetryNTimes(10, 5000));
+        client = newInstance();
     }
 
-    public static CuratorFramework getNewClient(String host){
+    public static CuratorFramework getClient(String host){
         if (host == null || "".equals(host)){
             return client;
         }
         return CuratorFrameworkFactory.newClient(host, new RetryNTimes(10, 5000));
     }
 
+    public static CuratorFramework getClient(){
+        return client;
+    }
+
     public static CuratorFramework getNewClient(){
+        return newInstance();
+    }
+
+    private static CuratorFramework newInstance(){
+        ResourceBundle bundle = ResourceBundle.getBundle("zookeeper");
+        String host = bundle.getString("host");
+        client = CuratorFrameworkFactory.newClient(host, new RetryNTimes(10, 5000));
         return client;
     }
 }

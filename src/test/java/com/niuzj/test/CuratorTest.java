@@ -2,9 +2,7 @@ package com.niuzj.test;
 
 import com.niuzj.util.CuratorUtil;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.*;
-import org.apache.curator.retry.RetryNTimes;
 import org.junit.Before;
 import org.junit.Test;
 
