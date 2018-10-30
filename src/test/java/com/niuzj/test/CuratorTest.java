@@ -1,5 +1,6 @@
 package com.niuzj.test;
 
+import com.niuzj.util.CuratorUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.*;
@@ -10,18 +11,16 @@ import org.junit.Test;
 import java.util.List;
 
 /**
- * Apache Curator测试
+ * Apache Curator测试, 基本操作
  * 参考博客https://www.cnblogs.com/seaspring/p/5536338.html
  */
 public class CuratorTest {
-
-    private String host = "192.168.70.128:2181";
 
     private CuratorFramework client;
 
     @Before
     public void before() {
-        client = CuratorFrameworkFactory.newClient(host, new RetryNTimes(10, 5000));
+        client = CuratorUtil.getNewClient();
         client.start();
     }
 
@@ -55,9 +54,9 @@ public class CuratorTest {
     //删除节点,如果存在子节点,删除所有子节点,然后删除该节点
     @Test
     public void test05() throws Exception {
-        client.delete().deletingChildrenIfNeeded().forPath("/zyq");
+        client.delete().deletingChildrenIfNeeded().forPath("/zk-test");
         //判断节点是否存在
-        System.out.println(client.checkExists().forPath("/zyq"));
+        System.out.println(client.checkExists().forPath("/zk-test"));
     }
 
     @Test
