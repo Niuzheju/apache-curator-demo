@@ -8,56 +8,24 @@ import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.curator.utils.EnsurePath;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Curator实现集群leader选举
+ * 参考:https://blog.csdn.net/wo541075754/article/details/70216046
  */
 public class CuratorLeaderTest {
 
     private String path = "/zk-leader";
 
-    @Test
-    public void test01() throws InterruptedException {
-        LeaderSelectorListener listener = new LeaderSelectorListener() {
-
-            @Override
-            public void takeLeadership(CuratorFramework curatorFramework) throws Exception {
-                System.out.println(Thread.currentThread().getName() + "成为leader");
-                Thread.sleep(5000L);
-                System.out.println(Thread.currentThread().getName() + "退出leader");
-            }
-
-            @Override
-            public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
-            }
-
-        };
-
-        new Thread(() -> {
-            registerListener(listener);
-        }, "t1").start();
-
-        new Thread(() -> {
-            registerListener(listener);
-        }, "t2").start();
-
-        new Thread(() -> {
-            registerListener(listener);
-        }, "t3").start();
-
-        Thread.sleep(Long.MAX_VALUE);
-
-    }
-
     /**
+     * leader latch方式
      * 随机从候选着中选出一台作为leader，选中之后除非调用close()释放leadship，否则其他的后选择无法成为leader。其中spark使用的就是这种方法。
-     * 参考:https://blog.csdn.net/wo541075754/article/details/70216046
      */
     @Test
     public void test02() {
@@ -106,23 +74,52 @@ public class CuratorLeaderTest {
             for (LeaderLatch leaderLatch : leaderLatches) {
                 CloseableUtils.closeQuietly(leaderLatch);
             }
-
         }
-
-
     }
 
-    private void registerListener(LeaderSelectorListener listener) {
-        CuratorFramework client = CuratorUtil.getNewClient();
-        client.start();
+    /**
+     * leader election
+     * 多个客户端轮流成为leader
+     */
+    @Test
+    public void test03() {
+        CountDownLatch lock = new CountDownLatch(1);
+        List<LeaderSelector> selectors = new ArrayList<>();
+        List<CuratorFramework> clients = new ArrayList<>();
         try {
-            new EnsurePath(path).ensure(client.getZookeeperClient());
+            for (int i = 0; i < 10; i++) {
+                final int id = i;
+                CuratorFramework client = CuratorUtil.getNewClient();
+                client.start();
+                clients.add(client);
+                LeaderSelector selector = new LeaderSelector(client, path, new LeaderSelectorListener() {
+
+                    @Override
+                    public void takeLeadership(CuratorFramework curatorFramework) throws Exception {
+                        Thread.sleep(3000L);
+                        System.out.println(id + " is leader");
+                    }
+
+                    @Override
+                    public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
+
+                    }
+                });
+                selector.autoRequeue();
+                selector.start();
+                selectors.add(selector);
+            }
+            lock.await();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            for (CuratorFramework client : clients) {
+                CloseableUtils.closeQuietly(client);
+            }
+
+            for (LeaderSelector selector : selectors) {
+                CloseableUtils.closeQuietly(selector);
+            }
         }
-        LeaderSelector selector = new LeaderSelector(client, path, listener);
-        //设置
-        selector.autoRequeue();
-        selector.start();
     }
 }
