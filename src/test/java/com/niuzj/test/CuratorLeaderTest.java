@@ -57,7 +57,6 @@ public class CuratorLeaderTest {
                     @Override
                     public void notLeader() {
                         System.out.println(latch.getId() + " is not leader");
-
                     }
                 });
                 latch.start();
