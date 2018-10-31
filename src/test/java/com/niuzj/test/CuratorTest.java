@@ -6,8 +6,6 @@ import org.apache.curator.framework.recipes.cache.*;
 import org.apache.zookeeper.CreateMode;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.math.BigDecimal;
 import java.util.List;
 
 /**

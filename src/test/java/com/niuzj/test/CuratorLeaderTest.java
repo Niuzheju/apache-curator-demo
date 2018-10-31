@@ -101,7 +101,6 @@ public class CuratorLeaderTest {
 
                     @Override
                     public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
-
                     }
                 });
                 selector.autoRequeue();
@@ -112,6 +111,7 @@ public class CuratorLeaderTest {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+
             for (CuratorFramework client : clients) {
                 CloseableUtils.closeQuietly(client);
             }
