@@ -3,9 +3,11 @@ package com.niuzj.test;
 import com.niuzj.util.CuratorUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.*;
+import org.apache.zookeeper.CreateMode;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -25,7 +27,7 @@ public class CuratorTest {
     //创建一个节点,持久化,如果父节点不存在创建父节点
     @Test
     public void test01() throws Exception {
-        client.create().creatingParentsIfNeeded().forPath("/zyq/nzj", "nzj".getBytes());
+        client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath("/zyq/nzj", "nzj".getBytes());
     }
 
     //获取一个节点的所有子节点
@@ -127,5 +129,6 @@ public class CuratorTest {
         watcher.start();
         Thread.sleep(Long.MAX_VALUE);
     }
+
 
 }
